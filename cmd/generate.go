@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -90,7 +89,7 @@ allow if {
 
 	// Genrate test case
 	filename := filepath.Join(dir, "test.rego")
-	r := rand.Int() % numPolicies
+	r := numPolicies / 2
 	test := fmt.Sprintf(`package conditions_test
 import data.conditions
 

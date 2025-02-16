@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,7 +30,14 @@ Also, you can specify the number of policies to generate for each test cases usi
 		roles := generateString("role", num)
 		methods := generateString("method", num)
 
-		err := generatePolicies(dir, num, names, roles, methods)
+		var err error
+		switch caseName {
+		case "conditions":
+			err = generateConditionsCase(dir, num, names, roles, methods)
+		default:
+			err = fmt.Errorf("unknown case name: %s", caseName)
+		}
+
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -39,20 +47,21 @@ Also, you can specify the number of policies to generate for each test cases usi
 func generateString(prefix string, num int) []string {
 	var result []string
 	for i := 0; i < num; i++ {
-		result = append(result, fmt.Sprintf("%s-%d", prefix, i))
+		result = append(result, fmt.Sprintf("%s_%d", prefix, i))
 	}
 	return result
 }
 
-func generatePolicies(dir string, numPolicies int, names, roles, methods []string) error {
+func generateConditionsCase(dir string, numPolicies int, names, roles, methods []string) error {
 
 	err := os.MkdirAll(dir, 0755) // Create directory if it doesn't exist
 	if err != nil {
 		return err
 	}
 
+	// Generate the policies
 	for i := 0; i < numPolicies; i++ {
-		name := names[i%len(names)] // Cycle through the lists
+		name := names[i%len(names)]
 		role := roles[i%len(roles)]
 		method := methods[i%len(methods)]
 
@@ -71,6 +80,29 @@ allow if {
 			return err
 		}
 	}
+
+	fmt.Printf("Generated %d policies in %s\n", numPolicies, dir)
+
+	// Genrate test case
+	filename := filepath.Join(dir, "test.rego")
+	r := rand.Int() % numPolicies
+	test := fmt.Sprintf(`package conditions_test
+import data.conditions
+
+test_allow if {
+  conditions.allow with input as {"user": "user_%d", "role": "role_%d", "method": "method_%d"}
+}
+
+test_deny if {
+  not conditions.allow with input as {"user": "user_%d", "role": "role_%d", "method": "method_%d"}
+}
+	`, r, r, r, r, r, r+1)
+
+	err = os.WriteFile(filename, []byte(test), 0644)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Generated test case in %s with random test value %d\n", filename, r)
 
 	return nil
 }

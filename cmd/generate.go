@@ -13,24 +13,29 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var caseName string
-var num int
-
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
-	Use:   "generate",
+	Use:   "generate <case>",
 	Short: "Generate a test case",
 	Long: `Generate a test case for the given problem. 
 
-You can specify one of the available problems name using --case flag. 
-Also, you can specify the number of policies to generate for each test cases using --num flag.`,
+You can specify one of the available benchmark case setting <case> argument. 
+Also, you can specify the number of policies to generate for each case using --num flag.`,
+	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+	ValidArgs: availableCases,
 	Run: func(cmd *cobra.Command, args []string) {
+		caseName := args[0]
+		num, err := cmd.Flags().GetInt("num")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
 		dir := filepath.Join("policies", caseName, strconv.Itoa(num))
 		names := generateString("user", num)
 		roles := generateString("role", num)
 		methods := generateString("method", num)
 
-		var err error
 		switch caseName {
 		case "conditions":
 			err = generateConditionsCase(dir, num, names, roles, methods)
@@ -109,6 +114,5 @@ test_deny if {
 
 func init() {
 	rootCmd.AddCommand(generateCmd)
-	generateCmd.Flags().StringVarP(&caseName, "case", "c", "conditions", "Specify the problem name")
-	generateCmd.Flags().IntVarP(&num, "num", "n", 100, "Specify the number of policies to generate")
+	generateCmd.Flags().IntP("num", "n", 10, "Number of policies to generate")
 }

@@ -41,6 +41,8 @@ func Execute() {
 	}
 }
 
+var availableCases = []string{"conditions"}
+
 func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// no flag or commands
 }

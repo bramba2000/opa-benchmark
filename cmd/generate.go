@@ -38,6 +38,8 @@ Also, you can specify the number of policies to generate for each case using --n
 		switch caseName {
 		case "conditions":
 			err = generateConditionsCase(dir, num, names, roles, methods)
+		case "array":
+			err = generateArrayCase(dir, num, names, roles, methods)
 		default:
 			err = fmt.Errorf("unknown case name: %s", caseName)
 		}
@@ -108,6 +110,44 @@ test_deny if {
 	}
 	fmt.Printf("Generated test case in %s with random test value %d\n", filename, r)
 
+	return nil
+}
+
+func generateArrayCase(dir string, numPolicies int, names, roles, methods []string) error {
+	err := os.MkdirAll(dir, 0755) // Create directory if it doesn't exist
+	if err != nil {
+		return err
+	}
+
+	// Generate the policies
+	var content string = "package arrays\n\nroles := [\n"
+	for i := 0; i < numPolicies; i++ {
+		content += fmt.Sprintf(`%c{"%s":"%s", "%s":"%s", "%s":"%s"}%s`, '\t', "user", names[i%len(names)], "role", roles[i%len(roles)], "method", methods[i%len(methods)], ",\n")
+	}
+	content += "]\n"
+	filename := filepath.Join(dir, "policy.rego")
+	err = os.WriteFile(filename, []byte(content), 0644)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Generated %d policies in %s\n", numPolicies, dir)
+
+	// Genrate test case
+	filename = filepath.Join(dir, "test.rego")
+	r := numPolicies / 2
+	test := fmt.Sprintf(`package arrays_test
+import data.arrays
+
+test_allow if {
+	some a in data.arrays[_]
+	a.role == "%s"
+}
+`, "role_"+strconv.Itoa(r))
+	err = os.WriteFile(filename, []byte(test), 0644)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Generated test case in %s with random test value %d\n", filename, r)
 	return nil
 }
 

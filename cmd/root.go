@@ -41,7 +41,7 @@ func Execute() {
 	}
 }
 
-var availableCases = []string{"conditions"}
+var availableCases = []string{"conditions", "array"}
 
 func init() {
 	// no flag or commands

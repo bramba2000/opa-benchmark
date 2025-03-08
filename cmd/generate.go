@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -40,6 +41,8 @@ Also, you can specify the number of policies to generate for each case using --n
 			err = generateConditionsCase(dir, num, names, roles, methods)
 		case "array":
 			err = generateArrayCase(dir, num, names, roles, methods)
+		case "early_exit":
+			err = generateEarlyExit(dir, num, names, roles, methods)
 		default:
 			err = fmt.Errorf("unknown case name: %s", caseName)
 		}
@@ -91,7 +94,7 @@ allow if {
 
 	// Genrate test case
 	filename := filepath.Join(dir, "test.rego")
-	r := numPolicies / 2
+	r := rand.Intn(numPolicies)
 	test := fmt.Sprintf(`package conditions_test
 import data.conditions
 
@@ -148,6 +151,74 @@ test_allow if {
 		return err
 	}
 	fmt.Printf("Generated test case in %s with random test value %d\n", filename, r)
+	return nil
+}
+
+func generateEarlyExit(dir string, numPolicies int, names, roles, methods []string) error {
+	err := os.MkdirAll(dir, 0755) // Create directory if it doesn't exist
+	if err != nil {
+		return err
+	}
+
+	// Generate the policies
+	content := `package early_exit` + "\n\n"
+	for i := 0; i < numPolicies; i++ {
+		name := names[i%len(names)]
+		role := roles[i%len(roles)]
+		method := methods[i%len(methods)]
+
+		content += "allow if {"
+		r := rand.Intn(2)
+		if r == 0 {
+			content += fmt.Sprintf(`%cinput.user == "%s"%c`, '\t', name, '\n')
+		}
+		r = rand.Intn(2)
+		if r == 0 {
+			content += fmt.Sprintf(`%cinput.role == "%s"%c`, '\t', role, '\n')
+		}
+		r = rand.Intn(2)
+		if r == 0 {
+			content += fmt.Sprintf(`%cinput.method == "%s"%c`, '\t', method, '\n')
+		}
+		r = rand.Intn(2)
+		if r == 0 {
+			content += fmt.Sprintf(`%cinput.userrole == "%s"%c`, '\t', name+role, '\n')
+		}
+		r = rand.Intn(2)
+		if r == 0 {
+			content += fmt.Sprintf(`%cinput.usermethod == "%s"%c`, '\t', name+method, '\n')
+		}
+		r = rand.Intn(2)
+		if r == 0 {
+			content += fmt.Sprintf(`%cinput.rolemethod == "%s"%c`, '\t', role+method, '\n')
+		}
+		content += "}\n\n"
+	}
+
+	filename := filepath.Join(dir, "policy.rego")
+	err = os.WriteFile(filename, []byte(content), 0644)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Generated %d policies in %s\n", numPolicies, dir)
+
+	// Generate test case
+	filename = filepath.Join(dir, "test.rego")
+	r := rand.Intn(numPolicies)
+	test := fmt.Sprintf(`package early_exit_test
+import data.early_exit
+
+test_allow if {
+  early_exit.allow with input as {"user": "user_%d", "role": "role_%d", "method": "method_%d", "userrole": "user_%drole_%d", "usermethod": "user_%dmethod_%d", "rolemethod": "role_%dmethod_%d"}
+}
+	`, r, r, r, r, r, r, r, r, r)
+
+	err = os.WriteFile(filename, []byte(test), 0644)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Generated test case in %s with random test value %d\n", filename, r)
+
 	return nil
 }
 

@@ -1,8 +1,8 @@
 ## Evaluation Environment
 
 All evaluation was executed on an **Ubuntu 24.04.02 Linux x86** machine, equipped with an **i7-11700KF processor**, **32GB RAM**, and **1TB SSD**.  
-All tests were performed using the [OPA-provided CLI](https://github.com/open-policy-agent/opa-benchmark) as the test runner and Golang scripts as the generator of the test cases.  
-The test repository ([opa-benchmark](https://github.com/open-policy-agent/opa-benchmark)) provides guides on how to generate the environment and the `opa-benchmark` tool required to run the tests. **Go version 1.24+ is required**.
+All tests were performed using the [OPA-provided CLI](https://github.com/open-policy-agent/opa) as the test runner and Golang scripts as the generator of the test cases.  
+The test repository ([opa-benchmark](https://github.com/bramba2000/opa-benchmark)) provides guides on how to generate the environment and the `opa-benchmark` tool required to run the tests. **Go version 1.24+ is required**.
 
 ### Test Case Generation
 
@@ -25,14 +25,13 @@ The generated test case is stored in `./policies/<test_case>/<num>`, containing 
 - Each test measures the time required for the OPA engine to execute the query in the corresponding `test.rego`.
 - The `opa-benchmark` tool runs each test case continuously for 30 seconds to collect a large enough sample, then averages the metrics.
 - The entire process is repeated **6 times** for robust data collection.
-- Data for each run is collected in `results/<test_case>/`, as `<num>.txt` files in [gobench](https://github.com/benchhub/gobench) format, which enables easy comparison with other test cases.
+- Data for each run is collected in `results/<test_case>/`, as `<num>.txt` files in [gobench](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat) format, which enables easy comparison with other test cases.
 
 ---
 
 ## Test Case: `conditions`
 
 The `conditions` test case, generated with $n$ policies, consists of $n$ Rego files, each with a simple conditional rule.  
-An example policy can be found in the [opa-benchmark repository](https://github.com/open-policy-agent/opa-benchmark).
 
 We evaluated two queries:
 - One returning `allow=true`
@@ -70,8 +69,7 @@ With ideal conditions, evaluating a high number of policies occurs in approximat
 ## Test Case: `early-exit`
 
 The `early_exit` test case, generated with $n$ policies, uses a single Rego file containing $n$ policies. Each policy is an allow rule with a random set of equality conditions.  
-The rules cannot be optimized by the OPA engine due to overlapping conditions and incomplete coverage. An example is available in the [opa-benchmark repository](https://github.com/open-policy-agent/opa-benchmark).
-
+The rules cannot be optimized by the OPA engine due to overlapping conditions and incomplete coverage. 
 ### Query Response Time
 
 |                | 100   | 200   | 300   | 400   | 500   | 600   | 700   | 800   | 900   | 1000  |
@@ -129,4 +127,4 @@ test_allow if {
 ## References
 
 - [opa-benchmark repository](https://github.com/open-policy-agent/opa-benchmark)
-- [gobench format and tools](https://github.com/benchhub/gobench)
+- [gobench format and tools](https://pkg.go.dev/golang.org/x/perf)
